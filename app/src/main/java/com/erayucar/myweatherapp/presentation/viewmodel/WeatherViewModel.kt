@@ -1,8 +1,7 @@
 package com.erayucar.myweatherapp.presentation.viewmodel
 
-import android.util.Log
-import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.erayucar.myweatherapp.common.Resource
@@ -11,6 +10,9 @@ import com.erayucar.myweatherapp.domain.use_case.GetWeatherUseCase
 import com.erayucar.myweatherapp.presentation.state.WeatherEvent
 import com.erayucar.myweatherapp.presentation.state.WeatherState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -22,32 +24,43 @@ class WeatherViewModel @Inject constructor(
     private val locationTracker: LocationTracker
 ) : ViewModel() {
 
-   private val _weatherState = mutableStateOf(WeatherState())
-    val weatherState: State<WeatherState> = _weatherState
-    var currentLocation: String = ""
+     var _weatherState = mutableStateOf(WeatherState())
+        private set
+
+    private val currentLocation = MutableStateFlow("istanbul")
+
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading = _isLoading.asStateFlow()
+
 
     init {
-        loadWeatherInfo(weatherState.value.search)
-
+        loadWeatherInfo()
     }
 
 
-
-    fun loadWeatherInfo(SearchCity: String = ""){
-        println(weatherState.value.weatherInfo?.temperature)
-        viewModelScope.launch {
+    fun loadWeatherInfo(SearchCity: String = "") {
+        viewModelScope.launch(Dispatchers.Main) {
+            _weatherState.value = _weatherState.value.copy(
+                isLoading = true
+            )
             locationTracker.getCurrentLocation()?.let { location ->
-                currentLocation = "${location.latitude},${location.longitude}"
+                currentLocation.value = "${location.latitude},${location.longitude}"
+
+            } ?: kotlin.run {
+                _weatherState.value = WeatherState(error = "Location not found")
+
             }
-            if (SearchCity != ""){
-                currentLocation = SearchCity
+
+
+            if (SearchCity != "") {
+                currentLocation.value = SearchCity
             }
-            getWeatherUseCase(currentLocation).onEach {
+            getWeatherUseCase(currentLocation.value).onEach {
                 when (it) {
 
 
-
                     is Resource.Success -> {
+                        _isLoading.value = false
                         _weatherState.value = WeatherState(weatherInfo = it.data)
 
                     }
@@ -56,6 +69,7 @@ class WeatherViewModel @Inject constructor(
                         _weatherState.value =
                             WeatherState(error = it.message ?: "An unexpected error occurred")
                     }
+
                     is Resource.Loading -> {
                         _weatherState.value = WeatherState(isLoading = true)
                     }
@@ -64,12 +78,14 @@ class WeatherViewModel @Inject constructor(
             }.launchIn(viewModelScope)
         }
     }
-    fun onEvent(event: WeatherEvent,) {
+
+    fun onEvent(event: WeatherEvent) {
         when (event) {
             is WeatherEvent.GetWeatherForCity -> {
                 loadWeatherInfo(event.city)
             }
         }
     }
+
 }
 

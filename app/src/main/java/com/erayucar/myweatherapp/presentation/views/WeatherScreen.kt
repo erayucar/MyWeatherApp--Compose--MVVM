@@ -1,5 +1,8 @@
 package com.erayucar.myweatherapp.presentation.views
 
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -13,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -24,15 +28,15 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -46,6 +50,8 @@ import com.erayucar.myweatherapp.presentation.Screen
 import com.erayucar.myweatherapp.presentation.state.WeatherEvent
 import com.erayucar.myweatherapp.presentation.state.WeatherState
 import com.erayucar.myweatherapp.presentation.viewmodel.WeatherViewModel
+import com.google.accompanist.swiperefresh.SwipeRefresh
+import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import java.time.format.DateTimeFormatter
 
 
@@ -54,37 +60,83 @@ fun WeatherScreen(
     viewModel: WeatherViewModel = hiltViewModel(),
     navController: NavController
 ) {
-    println("hello hello")
+   val permissionlauncher = rememberLauncherForActivityResult(
+       ActivityResultContracts.RequestMultiplePermissions()) {
+       viewModel.loadWeatherInfo()
+   }
+LaunchedEffect(key1 = true , block = {
+    permissionlauncher.launch(
+        arrayOf(
+            Manifest.permission.ACCESS_COARSE_LOCATION,
+            Manifest.permission.ACCESS_FINE_LOCATION
 
-    var state: WeatherState = viewModel.weatherState.value
+        )
+    )
+})
 
-    Column(
+
+    var state: WeatherState = remember {
+        viewModel._weatherState.value
+    }
+    val isLoading = viewModel.isLoading.collectAsState()
+    val swipeRefreshState = rememberSwipeRefreshState(isRefreshing = isLoading.value)
+
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFF38A5D6))
             .padding(20.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
+        contentAlignment = Alignment.Center,
     ) {
-        if (state.isLoading) {
-            CircularProgressIndicator(color = Color(0xFFFFFFFF))
-        } else if (state.error.isNotEmpty()) {
-            Text(text = state.error)
-        } else {
-            println("hello hello 2")
-            WeatherSearchBar(modifier = Modifier
-                .fillMaxWidth(),
-                hint = "Search", onSearch = {
-                    viewModel.onEvent(WeatherEvent.GetWeatherForCity(it))
-                    state = WeatherState(isLoading = true)
-                })
-            WeatherCard(
-                state = state,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(300.dp),
+        SwipeRefresh(state = swipeRefreshState, onRefresh = { viewModel.loadWeatherInfo() }) {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.SpaceBetween,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                item {
+                    if (state.isLoading) {
+                        CircularProgressIndicator(color = Color(0xFFFFFFFF))
+                    } else if (state.error.isNotEmpty()) {
+                        Text(text = state.error)
+                    } else if (state.weatherInfo != null) {
 
-                navController = navController
-            )
+                        WeatherSearchBar(modifier = Modifier
+                            .fillMaxWidth(),
+                            hint = "Search", onSearch = {
+                                viewModel.onEvent(WeatherEvent.GetWeatherForCity(it))
+                                state = WeatherState(isLoading = true)
+                            })
+                        WeatherCard(
+                            state = state,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(300.dp),
+
+                            navController = navController
+                        )
+
+                    }
+
+                }
+            }
+            /* println("hello hello 2")
+             WeatherSearchBar(modifier = Modifier
+                 .fillMaxWidth(),
+                 hint = "Search", onSearch = {
+                     viewModel.onEvent(WeatherEvent.GetWeatherForCity(it))
+                     state = WeatherState(isLoading = true)
+                 })
+             WeatherCard(
+                 state = state,
+                 modifier = Modifier
+                     .fillMaxWidth()
+                     .height(300.dp),
+
+                 navController = navController
+             )
+
+             */
         }
     }
 }
@@ -149,13 +201,20 @@ fun WeatherCard(
                     fontWeight = FontWeight(400),
                     color = Color(0xFFFFFFFF),
                 )
-                Row (modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly){
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
                     Text(
                         text = "humidity : %" + data.humidity.toString(),
                         fontSize = 16.sp,
                         color = Color(0xFFFFFFFF)
                     )
-                    Text(text = "visibility: " + data.visibility.toString() + " km", fontSize = 16.sp, color = Color(0xFFFFFFFF))
+                    Text(
+                        text = "visibility: " + data.visibility.toString() + " km",
+                        fontSize = 16.sp,
+                        color = Color(0xFFFFFFFF)
+                    )
 
                 }
 
@@ -188,10 +247,10 @@ fun WeatherSearchBar(
     hint: String = "",
     onSearch: (String) -> Unit = {}
 ) {
-    var text = remember {
+    val text = remember {
         mutableStateOf("")
     }
-    var isHintDisplayed = remember {
+    val isHintDisplayed = remember {
         mutableStateOf(hint != "")
     }
 

@@ -1,6 +1,5 @@
 package com.erayucar.myweatherapp.presentation.views
 
-import android.widget.Space
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -9,50 +8,32 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
-import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.semantics.Role.Companion.Image
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
-import com.erayucar.myweatherapp.R
 import com.erayucar.myweatherapp.data.remote.dto.Hour
 import com.erayucar.myweatherapp.data.remote.dto.toFormatDateTime
-import com.erayucar.myweatherapp.domain.model.WeatherForecastInfo
 import com.erayucar.myweatherapp.domain.model.toFormatUrl
-import com.erayucar.myweatherapp.presentation.Screen
 import com.erayucar.myweatherapp.presentation.state.WeatherForecastState
-import com.erayucar.myweatherapp.presentation.state.WeatherState
 import com.erayucar.myweatherapp.presentation.viewmodel.WeatherForecastViewModel
-import com.erayucar.myweatherapp.ui.theme.CardColor
-import com.erayucar.myweatherapp.ui.theme.MyWeatherAppTheme
 import java.time.format.DateTimeFormatter
-import java.time.format.TextStyle
 
 @Composable
 fun WeatherForecastScreen(
@@ -79,30 +60,75 @@ fun WeatherForecastScreen(
         } else {
             // WeatherCard(state = state)
             state.weatherForecast?.let {
-                WeatherForacastCard(
-                    state = state,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(300.dp),
-                )
-                Spacer(modifier = Modifier.height(10.dp))
-                Text(
-                    text = "Today's Hourly Weather Forecast",
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight(500),
-                    color = Color(0xFFFFFFFF),
-                )
-                Spacer(modifier = Modifier.height(10.dp))
+                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                    item {
 
-                LazyRow(
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    items(it.dayHour) {
-                        HourlyWeatherDisplay(
-                            weatherData = it, modifier = Modifier
-                                .height(200.dp)
+                        WeatherForacastCard(
+                            state = state,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(300.dp),
                         )
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Text(
+                            text = "Today's Hourly Weather Forecast",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight(500),
+                            color = Color(0xFFFFFFFF),
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        LazyRow(
+                            modifier = Modifier.fillMaxSize(),
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            items(it.dayHour) {
+                                HourlyWeatherDisplay(
+                                    weatherData = it, modifier = Modifier.height(200.dp)
+                                )
+                            }
+
+                        }
+                    }
+                    item {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            HumidityCard(
+                                state = state,
+                                modifier = Modifier
+                                    .size(170.dp),
+                            )
+                            VisibilityCard(
+                                state = state,
+                                modifier = Modifier
+                                    .size(170.dp),
+                            )
+
+
+                        }
+                    }
+                    item {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            FeelsLikeCard(
+                                state = state,
+                                modifier = Modifier
+                                    .size(170.dp),
+                            )
+                            UvCard(
+                                state = state,
+                                modifier = Modifier
+                                    .size(170.dp),
+                            )
+
+
+                        }
                     }
 
                 }
@@ -111,7 +137,9 @@ fun WeatherForecastScreen(
 
         }
 
+
     }
+
 }
 
 
@@ -119,7 +147,6 @@ fun WeatherForecastScreen(
 @Composable
 fun WeatherForacastCard(
     state: WeatherForecastState,
-    backgroundColor: Color = Color(0xFF21234E),
 
     modifier: Modifier,
 ) {
@@ -134,8 +161,7 @@ fun WeatherForacastCard(
 
         Card(
             shape = RoundedCornerShape(10.dp),
-            modifier = modifier
-                .padding(15.dp),
+            modifier = modifier.padding(15.dp),
             colors = CardDefaults.cardColors(Color(0x4DFFFFFF)),
 
 
@@ -156,13 +182,15 @@ fun WeatherForacastCard(
                     fontSize = 16.sp
                 )
                 Spacer(modifier = Modifier.width(25.dp))
-                LoadImage(path = data.toFormatUrl(data.conditionImageUrl))
+                LoadImage(path = data.toFormatUrl(data.current.condition.icon))
                 Spacer(modifier = Modifier.height(10.dp))
-                Text(text = data.condition, color = Color(0xFFFFFFFF), fontSize = 16.sp)
+                Text(
+                    text = data.current.condition.text, color = Color(0xFFFFFFFF), fontSize = 16.sp
+                )
                 Spacer(modifier = Modifier.height(10.dp))
 
                 Text(
-                    text = "${data.temperature}°C",
+                    text = "${data.current.temp_c}°C",
                     fontSize = 50.sp,
                     fontWeight = FontWeight(400),
                     color = Color(0xFFFFFFFF),
@@ -176,9 +204,7 @@ fun WeatherForacastCard(
 
 @Composable
 fun HourlyWeatherDisplay(
-    weatherData: Hour,
-    modifier: Modifier = Modifier,
-    textColor: Color = Color.White
+    weatherData: Hour, modifier: Modifier = Modifier, textColor: Color = Color.White
 ) {
 
 
@@ -189,8 +215,7 @@ fun HourlyWeatherDisplay(
 
         Text(
             text = weatherData.toFormatDateTime(weatherData.time)
-                .format(DateTimeFormatter.ofPattern("HH:mm")),
-            color = textColor
+                .format(DateTimeFormatter.ofPattern("HH:mm")), color = textColor
         )
         LoadImage(path = "https:" + weatherData.condition.icon)
         Text(
@@ -200,4 +225,3 @@ fun HourlyWeatherDisplay(
         )
     }
 }
-

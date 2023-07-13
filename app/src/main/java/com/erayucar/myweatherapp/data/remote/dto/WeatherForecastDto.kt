@@ -13,9 +13,10 @@ data class WeatherForecastDto(
 fun WeatherForecastDto.toWeatherForecastInfoMap() = WeatherForecastInfo(
     location = location.name,
     dayHour = forecast.forecastday[0].hour,
-    currentTime = LocalDateTime.parse(current.last_updated, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")),
-    condition = current.condition.text,
-    temperature = current.temp_c,
-    conditionImageUrl = current.condition.icon
+    currentTime = LocalDateTime.parse(
+        current.last_updated,
+        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+    ),
+    current = current,
 
-)
+    )

@@ -1,6 +1,5 @@
 package com.erayucar.myweatherapp.domain.use_case
 
-import android.content.res.Resources
 import com.erayucar.myweatherapp.common.Resource
 import com.erayucar.myweatherapp.data.remote.dto.toWeatherInfo
 import com.erayucar.myweatherapp.domain.model.WeatherInfo
@@ -16,14 +15,14 @@ class GetWeatherUseCase @Inject constructor(
 ) {
     operator fun invoke(location: String): Flow<Resource<WeatherInfo>> = flow {
         try {
-            emit(Resource.Loading<WeatherInfo>())
+            emit(Resource.Loading())
             val weatherInfo = repository.getWeatherData(location)
-            emit(Resource.Success<WeatherInfo>(weatherInfo.toWeatherInfo()))
+            emit(Resource.Success(weatherInfo.toWeatherInfo()))
 
         } catch (e: HttpException) {
-            emit(Resource.Error<WeatherInfo>(e.localizedMessage ?: "An unexpected error occurred"))
+            emit(Resource.Error(e.localizedMessage ?: "An unexpected error occurred"))
         }catch (e: IOException){
-            emit(Resource.Error<WeatherInfo>(e.localizedMessage ?: "Couldn't reach server. Check your internet connection."))
+            emit(Resource.Error(e.localizedMessage ?: "Couldn't reach server. Check your internet connection."))
         }
     }
 }
