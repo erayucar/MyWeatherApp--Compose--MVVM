@@ -43,7 +43,7 @@
 - [Gson](https://github.com/google/gson) Google Gson is of libraries for handling JSON objects
 #### Open API
 
-The MyWeatherApp project utilizes the [WeatherAPI](https://www.weatherapi.com), a comprehensive open API that provides data about Movie names, IMDB scores, and movie details
+The MyWeatherApp project utilizes the [WeatherAPI](https://www.weatherapi.com), a comprehensive open API that provides data about current weather, forecast, humidity and uv index.
 
 ###### Connect with me
 
