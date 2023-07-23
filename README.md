@@ -1,4 +1,4 @@
-<h1 align="center">KefyCinema</h1>
+<h1 align="center">My Weather App</h1>
 <p align="center">  
   </p>
 </br>
